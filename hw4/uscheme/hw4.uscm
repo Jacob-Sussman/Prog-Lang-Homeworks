@@ -1,0 +1,57 @@
+; COSC 3410 - Project 4
+; Explain briefly the functionality of the program.
+; @author Jacob Sussman
+; Instructor Dr. Brylow
+; TA-BOT:MAILTO jacob.sussman@marquette.edu
+
+(use tree-manual.uscm)
+
+(val path
+  (letrec 
+    ((path-helper 
+      (lambda (num t)
+        (if (not (tree? t))
+            'error-non-tree
+            (if (tree-null? t)
+                #f
+                (if (= num (tree-datum t))
+                    '()
+                    (if (< num (tree-datum t))
+                        (let ((subpath (path-helper num (tree-left t))))
+                          (if subpath
+                              (cons 'left subpath)
+                              #f))
+                        (let ((subpath (path-helper num (tree-right t))))
+                          (if subpath
+                              (cons 'right subpath)
+                              #f)))))))))
+    path-helper))
+
+; Inorder Traversal
+(val inorder 
+  (lambda (t)
+    (if (tree-null? t)
+        '() ; return empty list for null tree
+        (append 
+          (inorder (tree-left t))     ; traverse left subtree
+          (cons (tree-datum t) (inorder (tree-right t))) ; visit the current node and then traverse right subtree
+        )
+    )
+  )
+)
+
+; Postorder Traversal
+(val postorder
+  (lambda (t)
+    (if (tree-null? t)
+        '() ; return empty list for null tree
+        (append 
+          (postorder (tree-left t))   ; traverse left subtree
+          (append 
+           (postorder (tree-right t))  ; traverse right subtree
+           (cons (tree-datum t) '())   ; visit the current node
+          )
+        )
+    )
+  )
+)
