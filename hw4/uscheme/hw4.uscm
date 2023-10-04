@@ -1,8 +1,8 @@
 ; COSC 3410 - Project 4
 ; Explain briefly the functionality of the program.
-; @author Jacob Sussman
+; @author Jacob Sussman, Samuel Schulz
 ; Instructor Dr. Brylow
-; TA-BOT:MAILTO jacob.sussman@marquette.edu
+; TA-BOT:MAILTO jacob.sussman@marquette.edu, samuel.schulz@marquette.edu
 
 (use tree-manual.uscm)
 
@@ -55,3 +55,49 @@
     )
   )
 )
+
+; Exploding and Imploding digits
+(define explode-digits (n)
+  (if (< n 10)
+      (list n)
+      (append (explode-digits (quotient n 10))
+              (list (remainder n 10)))))
+
+(define implode-digits (ds)
+  (if (null? ds)
+      0
+      (+ (* (car ds) (expt 10 (sub1 (length ds))))
+         (implode-digits (cdr ds)))))
+
+; Dot Product
+(define dot-product (xs ys)
+  (if (or (null? xs) (null? ys))
+      0
+      (+ (* (car xs) (car ys))
+         (dot-product (cdr xs) (cdr ys)))))
+
+; From Lists to S-Exps
+(define count (x xs)
+  (if (null? xs)
+      0
+      (if (equal? x (car xs))
+          (+ 1 (count x (cdr xs)))
+          (count x (cdr xs)))))
+
+(define countall (x xs)
+  (if (null? xs)
+      0
+      (+ (count x (car xs))
+         (countall x (cdr xs)))))
+
+(define mirror (xs)
+  (if (null? xs)
+      '()
+      (append (mirror (cdr xs))
+              (list (car xs)))))
+
+(define flatten (xs)
+  (if (null? xs)
+      '()
+      (append (flatten (car xs))
+              (flatten (cdr xs)))))
