@@ -57,17 +57,41 @@
 )
 
 ; Exploding and Imploding digits
-(define explode-digits (n)
-  (if (< n 10)
-      (list n)
-      (append (explode-digits (quotient n 10))
-              (list (remainder n 10)))))
+(val explode-digits
+  (letrec 
+    ; Helper function to extract digits
+    ((explode-helper
+      (lambda (n acc)
+        (if (= n 0)
+            (if (null? acc)
+                '(0)
+                acc)
+            (explode-helper (/ n 10) (cons (mod n 10) acc))
+        )
+      ))
+    )
+    ; Initial call to helper with empty accumulator
+    (lambda (n)
+      (explode-helper n '())
+    )
+  )
+)
 
-(define implode-digits (ds)
-  (if (null? ds)
-      0
-      (+ (* (car ds) (expt 10 (sub1 (length ds))))
-         (implode-digits (cdr ds)))))
+(val implode-digits
+  (lambda (lst)
+    (letrec
+      ((helper
+        (lambda (lst acc)
+          (if (null? lst)
+              acc
+              (helper (cdr lst) (+ (* acc 10) (car lst)))
+          )
+        ))
+      )
+      (helper lst 0)
+    )
+  )
+)
 
 ; Dot Product
 (define dot-product (xs ys)
@@ -76,28 +100,75 @@
       (+ (* (car xs) (car ys))
          (dot-product (cdr xs) (cdr ys)))))
 
-; From Lists to S-Exps
-(define count (x xs)
-  (if (null? xs)
-      0
-      (if (equal? x (car xs))
-          (+ 1 (count x (cdr xs)))
-          (count x (cdr xs)))))
+; Count all occurrences of an element, even in nested lists
+(val countall
+  (letrec 
+    ; Helper function
+    ((count-helper
+      (lambda (x lst)
+        (if (null? lst) 0                             ; If the list is empty, return 0
+            (if (atom? (car lst))                     ; If the first element is an atom (i.e., not a list)
+                (if (equal? x (car lst))              ; If the atom is the one we're looking for
+                    (+ 1 (count-helper x (cdr lst)))  ; Count it and move to the rest of the list
+                    (count-helper x (cdr lst))        ; Otherwise, just move to the rest of the list
+                )
+                (+ (count-helper x (car lst))         ; If the first element is a list, recursively count in the sublist
+                   (count-helper x (cdr lst)))        ; and count in the rest of the list
+            )
+        )
+      ))
+    )
+    ; Initial call to helper
+    (lambda (x l)
+      (count-helper x l)
+    )
+  )
+)
 
-(define countall (x xs)
-  (if (null? xs)
-      0
-      (+ (count x (car xs))
-         (countall x (cdr xs)))))
+(val mirror
+  (letrec 
+    ; Main mirror function
+    ((mirror-main
+      (lambda (lst acc)
+        (if (null? lst)
+            acc
+            (let ((item (car lst)))
+              (if (pair? item)
+                  (mirror-main (cdr lst) (cons (mirror-main item '()) acc))
+                  (mirror-main (cdr lst) (cons item acc))
+              )
+            )
+        )
+      ))
+    )
+    ; Call the main function with initial accumulator as empty list
+    (lambda (lst)
+      (mirror-main lst '())
+    )
+  )
+)
 
-(define mirror (xs)
-  (if (null? xs)
-      '()
-      (append (mirror (cdr xs))
-              (list (car xs)))))
-
-(define flatten (xs)
-  (if (null? xs)
-      '()
-      (append (flatten (car xs))
-              (flatten (cdr xs)))))
+(val flatten
+  (letrec
+    ; Check if x is a list
+    ((is-list
+      (lambda (x)
+        (not (or (number? x) (symbol? x))))
+    )
+    ; Flatten helper function
+    (flatten-helper
+      (lambda (lst acc)
+        (if (null? lst)
+            acc ; if list is empty, return accumulator
+            (if (is-list (car lst)) ; if first element of list is a sublist
+                (flatten-helper (cdr lst) (append (flatten-helper (car lst) '()) acc))
+                (flatten-helper (cdr lst) (cons (car lst) acc)) ; if first element is an atom
+            )
+        )
+      ))
+    )
+    (lambda (lst)
+      (reverse (flatten-helper lst '())) ; reverse to get the correct order
+    )
+  )
+)
