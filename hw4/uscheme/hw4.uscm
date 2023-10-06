@@ -100,6 +100,19 @@
       (+ (* (car xs) (car ys))
          (dot-product (cdr xs) (cdr ys)))))
 
+; Count occurrences
+(val count
+  (lambda (x lst)
+    (if (null? lst)
+        0
+        (if (equal? x (car lst))
+            (+ 1 (count x (cdr lst)))
+            (count x (cdr lst))
+        )
+    )
+  )
+)
+
 ; Count all occurrences of an element, even in nested lists
 (val countall
   (letrec 
