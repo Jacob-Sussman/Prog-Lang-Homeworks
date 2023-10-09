@@ -7,6 +7,9 @@ static int32_t projectint32(Exp e, Value v) {
         runerror("in %e, expected an integer, but got %v", e, v);
     return v.num;
 }
+
+static Value make_list(Valuelist args);
+
 /* prim.c 161b */
 Value arith(Exp e, int tag, Valuelist args) {
     checkargc(e, 2, lengthVL(args));
@@ -146,4 +149,22 @@ Value equalatoms(Value v, Value w) {
     default:
         return falsev;
     }
+}
+
+Value nary(Exp e, int tag, Valuelist args) {
+    (void)e;  // suppress unused variable warning
+
+    switch (tag) {
+    case MAKE_LIST:
+        return make_list(args);
+    default:
+        assert(0);  // This shouldn't be reached
+    }
+}
+
+Value make_list(Valuelist args) {
+    if (args == NULL)
+        return mkNil();
+    else
+        return cons(nthVL(args, 0), make_list(args->tl));
 }

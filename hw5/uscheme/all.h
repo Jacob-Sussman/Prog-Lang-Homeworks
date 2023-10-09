@@ -517,7 +517,7 @@ void report_test_results(int npassed, int ntests);
 /* shared function prototypes S304d */
 Printer printexp, printdef, printvalue, printfun;
 /* shared function prototypes S312b */
-Primitive arith, binary, unary;
+Primitive arith, binary, unary, nary;
 /* shared function prototypes S322c */
 ParserResult sSexp    (ParserState state);
 ParserResult sBindings(ParserState state);
