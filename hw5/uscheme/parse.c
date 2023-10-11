@@ -264,3 +264,30 @@ Exp desugarLetStar(Namelist xs, Explist es, Exp body) {
                           desugarLetStar(xs->tl, es->tl, body));
     }
 }
+
+Deflist desugarRecord(Name recname, Namelist fieldnames) {
+  Deflist defs = NULL;
+  
+  Exp constructor = mkApply(mkVar(mkConstructorName(recname)), 
+                            mkNamelist(fieldnames));
+  defs = mkDL(mkDefine(mkConstructorName(recname), 
+                        mkLambda(fieldnames, constructor)), 
+              defs);
+
+  Exp predicateArgs = mkVar(strtoname("x"));
+  Exp predicateTest = /* build predicate test expression */;
+  defs = mkDL(mkDefine(mkPredicateName(recname),
+                        mkLambda(mkNL(predicateArgs, NULL), predicateTest)),
+              defs);
+
+  Namelist field;
+  for (field = fieldnames; field != NULL; field = field->tl) {
+    Exp accessorArg = mkVar(strtoname("x"));
+    Exp accessorBody = /* build accessor body expression */;
+    defs = mkDL(mkDefine(mkAccessorName(recname, field->hd),
+                          mkLambda(mkNL(accessorArg, NULL), accessorBody)),
+                defs); 
+  }
+
+  return defs;
+}

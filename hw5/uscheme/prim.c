@@ -157,6 +157,33 @@ Value nary(Exp e, int tag, Valuelist args) {
     switch (tag) {
     case MAKE_LIST:
         return make_list(args);
+
+    case APPLY: {
+      Value fun = nthVL(args, 0);
+      Value arglist = nthVL(args, 1);
+      
+      if (fun.alt != CLOSURE && fun.alt != PRIMITIVE) {
+        runerror("apply expected function, got %v", fun); 
+      }
+
+      if (arglist.alt != PAIR) {
+        runerror("apply expected argument list, got %v", arglist);
+      }
+      
+      Valuelist actuals = NULL;
+      while (arglist.alt == PAIR) {
+        actuals = mkVL(nthVL(actuals, 0), *arglist.pair.car); 
+        arglist = *arglist.pair.cdr;
+      }
+      
+      if (fun.alt == CLOSURE) {
+        return eval(mkApply(mkVar(fun.closure.lambda.name), actuals), 
+                    fun.closure.env); 
+      } else {
+        return fun.primitive.function(e, fun.primitive.tag, actuals);
+      }
+    }
+
     default:
         assert(0);  // This shouldn't be reached
     }
