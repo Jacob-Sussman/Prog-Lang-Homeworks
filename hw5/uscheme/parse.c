@@ -1,3 +1,11 @@
+/**
+ * COSC 3410 - Project 5
+ * Explain briefly the functionality of the program.
+ * @author Jacob Sussman, Samuel Schulz
+ * Instructor Dr. Brylow
+ * TA-BOT:MAILTO jacob.sussman@marquette.edu, samuel.schulz@marquette.edu
+ */
+
 #include "all.h"
 /* parse.c S322b */
 struct Usage usage_table[] = {

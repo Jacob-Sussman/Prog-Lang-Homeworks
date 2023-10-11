@@ -1,3 +1,11 @@
+/**
+ * COSC 3410 - Project 5
+ * Explain briefly the functionality of the program.
+ * @author Jacob Sussman, Samuel Schulz
+ * Instructor Dr. Brylow
+ * TA-BOT:MAILTO jacob.sussman@marquette.edu, samuel.schulz@marquette.edu
+ */
+
 #include "all.h"
 /* prim.c ((elided)) (THIS CAN'T HAPPEN -- claimed code was not used) */
 static int32_t divide(int32_t n, int32_t m);
