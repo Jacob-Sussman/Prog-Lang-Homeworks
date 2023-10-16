@@ -1,6 +1,7 @@
 #include "all.h"
 /* prim.c ((elided)) (THIS CAN'T HAPPEN -- claimed code was not used) */
 static int32_t divide(int32_t n, int32_t m);
+
 /* prim.c 161a */
 static int32_t projectint32(Exp e, Value v) {
     if (v.alt != NUM)
@@ -117,6 +118,62 @@ static int32_t divide(int32_t n, int32_t m) {
         else
             return -n / -m;
 }
+
+Valuelist valueToList(Value list) {
+    // Base case: if list is empty (NIL), end recursion.
+    if (list.alt == NIL) {
+        return NULL;
+    }
+
+    // Ensure we are dealing with a pair (cons cell) before proceeding.
+    if (list.alt != PAIR) {
+        runerror("Expected a pair, but got %v", list);
+    }
+
+    Value current_head = *list.pair.car;
+    Value current_tail = *list.pair.cdr;
+
+    // Recursive call, ensuring that it moves towards the base case.
+    return mkVL(current_head, valueToList(current_tail));
+}
+
+
+Valuelist asValuelist(Value v) {
+    // if (!listp(v)) {  // If v is not a list, report an error.
+    //     runerror("Expected a list, but got %v", v);
+    // }
+    return valueToList(v); // Convert the Value to a Valuelist.
+}
+
+
+Value apply(Exp e, Value fun, Value args) {
+    // Check if the first argument is a function (closure or primitive)
+    if (fun.alt != CLOSURE && fun.alt != PRIMITIVE) {
+        runerror("in %e, expected a function, but got %v", e, fun);
+    }
+
+    // Check if the second argument is a list
+    // if (!listp(args)) {
+    //     runerror("in %e, expected a list, but got %v", e, args);
+    // }
+
+    // If we have a primitive function, we need to extract the actual function
+    if (fun.alt == PRIMITIVE) {
+        // Evaluate the primitive function with the arguments from the list
+        return fun.primitive.function(e, fun.primitive.tag, asValuelist(args));
+    } else if (fun.alt == CLOSURE) {
+        // For a closure, we need to apply the function to the arguments
+        Namelist xs = fun.closure.lambda.formals;
+        checkargc(e, lengthNL(xs), lengthVL(asValuelist(args)));
+        return eval(fun.closure.lambda.body, bindalloclist(xs, asValuelist(args), fun.closure.env));
+    }
+
+    // We shouldn't reach here, but if we do, return an error
+    assert(0);
+    return mkNum(0); // just to make the compiler happy; this should never execute
+}
+
+
 /* prim.c S313d */
 Value binary(Exp e, int tag, Valuelist args) {
     checkargc(e, 2, lengthVL(args));
@@ -128,6 +185,8 @@ Value binary(Exp e, int tag, Valuelist args) {
         return cons(v, w);
     case EQ:   
         return equalatoms(v, w);
+    case APPLYFN:
+        return apply(e, v, w);
     default:
         assert(0);
     }
