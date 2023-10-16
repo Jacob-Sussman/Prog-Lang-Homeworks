@@ -1,4 +1,25 @@
+/**
+ * COSC 3410 - Project 5
+ * Explain briefly the functionality of the program.
+ * @author Jacob Sussman, Samuel Schulz
+ * Instructor Dr. Brylow
+ * TA-BOT:MAILTO jacob.sussman@marquette.edu, samuel.schulz@marquette.edu
+ */
+
 #include "all.h"
+
+Name mkConstructorName(Name recname) {
+  return namecat(recname, strtoname("-make"));
+}
+
+Name mkPredicateName(Name recname) {
+  return namecat(recname, strtoname?); 
+}
+
+Name mkAccessorName(Name recname, Name fieldname) {
+  return namecat(recname, fieldname); 
+}
+
 /* scheme.c S315b */
 int main(int argc, char *argv[]) {
     /* install conversion specifications for [[print]] and [[fprint]] S315c */

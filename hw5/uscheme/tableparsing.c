@@ -1,3 +1,11 @@
+/**
+ * COSC 3410 - Project 5
+ * Explain briefly the functionality of the program.
+ * @author Jacob Sussman, Samuel Schulz
+ * Instructor Dr. Brylow
+ * TA-BOT:MAILTO jacob.sussman@marquette.edu, samuel.schulz@marquette.edu
+ */
+
 #include "all.h"
 /* tableparsing.c S194a */
 /* private function prototypes for parsing S199d */
@@ -225,6 +233,10 @@ ParserResult use_exp_parser(ParserState s) {
     s->components[s->nparsed++].exp = e;
     return STOP_PARSING;
 }
+
+case SUGAR(RECORD):
+  return mkDef(mkDefs(desugarRecord(comps[0].name, comps[1].names)));
+
 /* tableparsing.c S205c */
 Name parsename(Par p, ParsingContext context) {
     Exp e = parseexp(p, context->source);
