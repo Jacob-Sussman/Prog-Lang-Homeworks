@@ -13,7 +13,7 @@ Name mkConstructorName(Name recname) {
 }
 
 Name mkPredicateName(Name recname) {
-  return namecat(recname, strtoname?); 
+  return namecat(recname, strtoname("-predicate"));
 }
 
 Name mkAccessorName(Name recname, Name fieldname) {

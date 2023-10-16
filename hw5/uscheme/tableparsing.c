@@ -107,8 +107,7 @@ ParserResult sLocals(ParserState s) {
         context.name = strtoname("locals");
         context.par = p;
         halfshift(s);
-        s->components[s->nparsed++].names = parsenamelist(p->list->tl, &context)
-                                                                               ;
+        s->components[s->nparsed++].names = parsenamelist(p->list->tl, &context);
         return PARSED;
     } else {        
         s->components[s->nparsed++].names = NULL;
@@ -233,10 +232,6 @@ ParserResult use_exp_parser(ParserState s) {
     s->components[s->nparsed++].exp = e;
     return STOP_PARSING;
 }
-
-case SUGAR(RECORD):
-  return mkDef(mkDefs(desugarRecord(comps[0].name, comps[1].names)));
-
 /* tableparsing.c S205c */
 Name parsename(Par p, ParsingContext context) {
     Exp e = parseexp(p, context->source);
@@ -306,7 +301,6 @@ void *name_error(Par bad, struct ParsingContext *c) {
                  c->par, bad);
     case SET:
         synerror(c->source, "in %p, expected (set x e), but %p is not a name",
-                                                                                
                  c->par, bad);
     case APPLY:
         synerror(c->source, "in %p, expected (function-name ...), "

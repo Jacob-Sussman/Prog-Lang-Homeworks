@@ -1,5 +1,5 @@
 /**
- * COSC 3410 - Project 5
+ * COSC 3410 - Project 5  
  * Explain briefly the functionality of the program.
  * @author Jacob Sussman, Samuel Schulz
  * Instructor Dr. Brylow
@@ -48,7 +48,7 @@ struct ParserRow exptable[] = {
   { "if",     ANEXP(IFX),     ifshifts },
   { "begin",  ANEXP(BEGIN),   beginshifts },
   { "lambda", ANEXP(LAMBDAX), lambdashifts },
-  { "quote",  ANEXP(LITERAL), quoteshifts }, 
+  { "quote",  ANEXP(LITERAL), quoteshifts },
 
 /* rows of \uscheme's [[exptable]] that are sugared in {\uschemeplus} ((uscheme)) S323b */
     { "while",  ANEXP(WHILEX),  whileshifts },
@@ -230,8 +230,7 @@ void check_exp_duplicates(Sourceloc source, Exp e) {
             for (Explist es = e->letx.es; es; es = es->tl)
                 if (es->hd->alt != LAMBDAX)
                     synerror(source,
-                             "in letrec, expression %e is not a lambda", es->hd)
-                                                                               ;
+                             "in letrec, expression %e is not a lambda", es->hd);
         return;
     default:
         return;
@@ -275,26 +274,47 @@ Exp desugarLetStar(Namelist xs, Explist es, Exp body) {
 
 Deflist desugarRecord(Name recname, Namelist fieldnames) {
   Deflist defs = NULL;
-  
-  Exp constructor = mkApply(mkVar(mkConstructorName(recname)),  
-                            mkNamelist(fieldnames));
-  defs = mkDL(mkDefine(mkConstructorName(recname),
-                        mkLambda(fieldnames, constructor)),
-              defs);
+
+  Explist fieldlist = NULL;  // Initialize an empty explist
+
+  // Convert fieldnames to explist
+  Namelist currentField = fieldnames;
+  while (currentField != NULL) {
+    fieldlist = mkEL(mkVar(currentField->hd), fieldlist);
+    currentField = currentField->tl;
+  }
+
+  // Create a let expression to bind the fields
+  Exp letBody = mkLetx(LET, fieldnames, fieldlist, mkLiteral(truev));
+
+  defs = mkDL(mkDefine(mkConstructorName(recname), mkLambda(NULL, letBody)), defs);
 
   Exp predicateArgs = mkVar(strtoname("x"));
-  Exp predicateTest = /* build predicate test expression */;
+
+  Name predicateArgName = predicateArgs->var;
+
+  // Wrap predicates in explist
+  Exp predicateTest = mkApply(mkVar(strtoname("pair?")),
+                              mkEL(mkVar(predicateArgName), NULL)); // Change test
+
   defs = mkDL(mkDefine(mkPredicateName(recname),
-                        mkLambda(mkNL(predicateArgs, NULL), predicateTest)),
+                       mkLambda(mkNL(predicateArgName, NULL), predicateTest)),
               defs);
 
   Namelist field;
   for (field = fieldnames; field != NULL; field = field->tl) {
+
     Exp accessorArg = mkVar(strtoname("x"));
-    Exp accessorBody = /* build accessor body expression */;
+
+    Name accessorArgName = accessorArg->var;
+
+    // Wrap accessor in explist
+    Exp accessorBody = mkApply(mkVar(mkAccessorName(recname, field->hd)),
+                              mkEL(mkVar(accessorArgName), NULL)); // Change test
+
     defs = mkDL(mkDefine(mkAccessorName(recname, field->hd),
-                          mkLambda(mkNL(accessorArg, NULL), accessorBody)),
-                defs);
+                       mkLambda(mkNL(accessorArgName, NULL), accessorBody)),
+              defs);
   }
 
   return defs;

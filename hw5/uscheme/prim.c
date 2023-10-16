@@ -1,11 +1,3 @@
-/**
- * COSC 3410 - Project 5
- * Explain briefly the functionality of the program.
- * @author Jacob Sussman, Samuel Schulz
- * Instructor Dr. Brylow
- * TA-BOT:MAILTO jacob.sussman@marquette.edu, samuel.schulz@marquette.edu
- */
-
 #include "all.h"
 /* prim.c ((elided)) (THIS CAN'T HAPPEN -- claimed code was not used) */
 static int32_t divide(int32_t n, int32_t m);
@@ -15,9 +7,6 @@ static int32_t projectint32(Exp e, Value v) {
         runerror("in %e, expected an integer, but got %v", e, v);
     return v.num;
 }
-
-static Value make_list(Valuelist args);
-
 /* prim.c 161b */
 Value arith(Exp e, int tag, Valuelist args) {
     checkargc(e, 2, lengthVL(args));
@@ -157,49 +146,4 @@ Value equalatoms(Value v, Value w) {
     default:
         return falsev;
     }
-}
-
-Value nary(Exp e, int tag, Valuelist args) {
-    (void)e;  // suppress unused variable warning
-
-    switch (tag) {
-    case MAKE_LIST:
-        return make_list(args);
-
-    case APPLY: {
-      Value fun = nthVL(args, 0);
-      Value arglist = nthVL(args, 1);
-      
-      if (fun.alt != CLOSURE && fun.alt != PRIMITIVE) {
-        runerror("apply expected function, got %v", fun); 
-      }
-
-      if (arglist.alt != PAIR) {
-        runerror("apply expected argument list, got %v", arglist);
-      }
-      
-      Valuelist actuals = NULL;
-      while (arglist.alt == PAIR) {
-        actuals = mkVL(nthVL(actuals, 0), *arglist.pair.car); 
-        arglist = *arglist.pair.cdr;
-      }
-      
-      if (fun.alt == CLOSURE) {
-        return eval(mkApply(mkVar(fun.closure.lambda.name), actuals), 
-                    fun.closure.env); 
-      } else {
-        return fun.primitive.function(e, fun.primitive.tag, actuals);
-      }
-    }
-
-    default:
-        assert(0);  // This shouldn't be reached
-    }
-}
-
-Value make_list(Valuelist args) {
-    if (args == NULL)
-        return mkNil();
-    else
-        return cons(nthVL(args, 0), make_list(args->tl));
 }
