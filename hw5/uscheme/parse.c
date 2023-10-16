@@ -17,6 +17,7 @@ struct Usage usage_table[] = {
     { ALET(LET),     "(let ([var exp] ...) body)" },
     { ALET(LETSTAR), "(let* ([var exp] ...) body)" },
     { ALET(LETREC),  "(letrec ([var exp] ...) body)" },
+    { SUGAR(CAND), 	 "(&& exp … exp)" },
     /* \uscheme\ [[usage_table]] entries added in exercises S324i */
     /* add expected usage for each new syntactic form */
     { -1, NULL }
@@ -47,6 +48,7 @@ struct ParserRow exptable[] = {
     { "let",    ALET(LET),      letshifts },
     { "let*",   ALET(LETSTAR),  letshifts },
     { "letrec", ALET(LETREC),   letshifts },
+    { "&&",	    SUGAR(CAND),	beginshifts },
   /* rows added to \uscheme's [[exptable]] in exercises S324f */
   /* add a row for each new syntactic form of Exp */
   { NULL,     ANEXP(APPLY),   applyshifts }  // must come last
@@ -70,6 +72,7 @@ Exp reduce_to_exp(int code, struct Component *comps) {
   case ANEXP(LAMBDAX): return mkLambdax(mkLambda(comps[0].names,comps[1].exp));
   case ANEXP(APPLY):   return mkApply(comps[0].exp, comps[1].exps);
   case ANEXP(LITERAL): return mkLiteral(comps[0].value);
+  case SUGAR(CAND): return desugarAnd(comps[0].exps);
   /* cases for \uscheme's [[reduce_to_exp]] added in exercises S324g */
   /* add a case for each new syntactic form of Exp */
   }
@@ -263,4 +266,10 @@ Exp desugarLetStar(Namelist xs, Explist es, Exp body) {
         return desugarLet(mkNL(xs->hd, NULL), mkEL(es->hd, NULL),
                           desugarLetStar(xs->tl, es->tl, body));
     }
+}
+
+Exp desugarAnd(Explist es) {
+    if(!es) return mkLiteral(truev);
+    if(es->tl == NULL) return es->hd;
+    return mkIfx(es->hd, desugarAnd(es->tl), mkLiteral(falsev));
 }
