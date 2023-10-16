@@ -119,7 +119,7 @@ static int32_t divide(int32_t n, int32_t m) {
             return -n / -m;
 }
 
-Valuelist valueToList(Value list) {
+Valuelist asValuelist(Value list) {
     // Base case: if list is empty (NIL), end recursion.
     if (list.alt == NIL) {
         return NULL;
@@ -134,17 +134,8 @@ Valuelist valueToList(Value list) {
     Value current_tail = *list.pair.cdr;
 
     // Recursive call, ensuring that it moves towards the base case.
-    return mkVL(current_head, valueToList(current_tail));
+    return mkVL(current_head, asValuelist(current_tail));
 }
-
-
-Valuelist asValuelist(Value v) {
-    // if (!listp(v)) {  // If v is not a list, report an error.
-    //     runerror("Expected a list, but got %v", v);
-    // }
-    return valueToList(v); // Convert the Value to a Valuelist.
-}
-
 
 Value apply(Exp e, Value fun, Value args) {
     // Check if the first argument is a function (closure or primitive)
