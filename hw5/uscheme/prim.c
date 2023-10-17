@@ -164,6 +164,61 @@ Value apply(Exp e, Value fun, Value args) {
     return mkNum(0); // just to make the compiler happy; this should never execute
 }
 
+/* Modify nullary function in prim.c */
+Value nullary(Exp e, int tag, Valuelist args) {
+    checkargc(e, 0, lengthVL(args));
+    switch (tag) {
+        case READ:
+        {
+            // Buffer to read the input s-expression.
+            const int BUFFER_SIZE = 1024;
+            char buffer[BUFFER_SIZE];
+
+            // Prompt the user and read the input expression.
+            printf("-> "); // or use the provided prompt in your system
+            if (!fgets(buffer, BUFFER_SIZE, stdin)) {
+                runerror("failed to read an integer in %e", e);
+            }
+
+            // Remove the newline character at the end of the string, if there is one.
+            size_t len = strlen(buffer);
+            if (len > 0 && buffer[len - 1] == '\n') {
+                buffer[len - 1] = '\0';
+            }
+
+            // Now, we have the s-expression as a string in 'buffer'.
+            // We need to parse this string to create the internal representation.
+
+            // First, create a Linestream from the buffer.
+            Linestream lineStream = stringlines("<stdin>", buffer);
+
+            // Then create a Parstream (parenthesized expression stream).
+            Parstream parStream = parstream(lineStream, NOT_PROMPTING);
+
+            // Read the parenthesized expression from the stream.
+            Par par = getpar(parStream);
+
+            // Check for an end-of-file or error condition from getpar (if applicable in your implementation).
+            if (par == NULL) {
+                runerror("End of file or error while reading the expression.\n");
+            }
+
+            // Parse the s-expression and convert it to a Value.
+            Value result = parsesx(par, parsource(parStream));
+
+            // Free resources if necessary (depending on your memory management).
+            // freeline(lineStream);
+            // freepar(parStream);
+
+            // Return the parsed s-expression.
+            return result;
+        }
+        // ... other cases ...
+        default:
+            assert(0); // or proper error handling
+    }
+}
+
 
 /* prim.c S313d */
 Value binary(Exp e, int tag, Valuelist args) {
