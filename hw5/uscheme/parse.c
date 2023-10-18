@@ -333,7 +333,7 @@ Deflist recordAccessors(Name recname, int num, Namelist fieldnames) {
 
         // Build a function body that retrieves the i-th element from the record (skipping the record name).
         Exp body = mkVar(argName);
-        for (int j = 0; j <= i + 1; ++j) {  // +1 to skip the record name.
+        for (int j = 0; j < i + 1; ++j) {  // Only +1 to skip the record name.
             body = mkApply(mkVar(strtoname("cdr")), mkEL(body, NULL));
         }
         body = mkApply(mkVar(strtoname("car")), mkEL(body, NULL));
