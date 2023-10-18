@@ -308,7 +308,7 @@ Def recordPredicate(Name recname, Namelist fieldnames) {
     Name argName = strtoname("obj"); // Argument for the lambda function.
 
     Exp check = mkApply(
-        mkVar(strtoname("eq?")),
+        mkVar(strtoname("equal?")),
         mkEL(
             mkApply(mkVar(strtoname("car")), mkEL(mkVar(argName), NULL)), // Get the first element of the list.
             mkEL(mkLiteral(mkSym(recname)), NULL) // Check against the record name.
