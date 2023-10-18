@@ -189,6 +189,7 @@ static ShiftFun checkexpshifts[] = { sExp, sExp,             stop };
 static ShiftFun checkassshifts[] = { sExp,                   stop };
 static ShiftFun checkerrshifts[] = { sExp,                   stop };
 static ShiftFun expshifts[]      = { use_exp_parser };
+static ShiftFun recordshifts[]   = { sName, sNamelist,       stop };
 
 void extendDefine(void) { defineshifts[3] = sExps; }
 
@@ -201,6 +202,7 @@ struct ParserRow xdeftable[] = {
     { "check-error",  ATEST(CHECK_ERROR),  checkerrshifts },
     /* rows added to [[xdeftable]] in exercises S210d */
     /* add new forms for extended definitions here */
+    { "record",       SUGAR(RECORD),       recordshifts},
     { NULL,           ADEF(EXP),           expshifts }  // must come last
 };
 /* tableparsing.c S204b */
