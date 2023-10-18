@@ -284,8 +284,7 @@ static Exp consexp(Exp e1, Exp e2) {
 
 Def recordConstructor(Name recname, Namelist fieldnames) {
     // Start with an empty list. We will represent 'nil' directly as a value.
-    // This assumes your implementation has a direct representation for 'nil'.
-    Exp body = mkLiteral(mkNil());  // or whatever your direct representation of 'nil' is.
+    Exp body = mkLiteral(mkNil()); 
 
     // Add each field to the list, ensuring the right order.
     for (int i = lengthNL(fieldnames) - 1; i >= 0; --i) { // Move backwards to keep the order.
