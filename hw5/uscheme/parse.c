@@ -283,14 +283,17 @@ static Exp consexp(Exp e1, Exp e2) {
 }
 
 Def recordConstructor(Name recname, Namelist fieldnames) {
-    // The constructor function will create a list with the record name as the first element
-    // followed by all the field values.
-    
-    Exp body = mkVar(nthNL(fieldnames, 0)); // Start with the last field.
-    for (int i = 1; i < lengthNL(fieldnames); ++i) {
-        body = consexp(mkVar(nthNL(fieldnames, i)), body); // Add each field to the list.
+    // Start with an empty list. We will represent 'nil' directly as a value.
+    // This assumes your implementation has a direct representation for 'nil'.
+    Exp body = mkLiteral(mkNil());  // or whatever your direct representation of 'nil' is.
+
+    // Add each field to the list, ensuring the right order.
+    for (int i = lengthNL(fieldnames) - 1; i >= 0; --i) { // Move backwards to keep the order.
+        body = consexp(mkVar(nthNL(fieldnames, i)), body);
     }
-    body = consexp(mkLiteral(mkSym(recname)), body); // Add the record name as the first element.
+
+    // Add the record name as the first element.
+    body = consexp(mkLiteral(mkSym(recname)), body);
 
     // Define the constructor function.
     return mkDefine(
