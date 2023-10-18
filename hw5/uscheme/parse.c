@@ -1,3 +1,11 @@
+/* 
+    COSC 3410 - Project 5
+    Implemented apply, record, read S-Expressions, and list
+    @author [Jacob Sussman, Samuel Schulz]
+    Instructor [Brylow]
+    TA-BOT:MAILTO [jacob.sussman@marquette.edu, samuel.schulz@marquette.edu]
+*/
+
 #include "all.h"
 /* parse.c S322b */
 struct Usage usage_table[] = {
