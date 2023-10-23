@@ -1501,16 +1501,28 @@ val _ = op bindings  : (name * exp) list parser
       fun desugarCond qas =
         case qas of
           [] => 
-            (* No more conditions; this should not be an error but should return a default value. *)
-            LITERAL (BOOLV false)  (* This represents a 'false' literal in the interpreter. *)
+            (* No more conditions; in this context, it means all previous conditions were false,
+              so we return a 'false' literal. *)
+            LITERAL (BOOLV false) 
           | (q, a)::rest =>
-            (* For the current question-answer pair, create an if expression.
+            (* For each question-answer pair, create an if expression.
               If the question evaluates to true, the answer is evaluated.
               Otherwise, move to the next question-answer pair. *)
-            IFX (q, a, desugarCond rest)  (* Recursively process the rest of the conditions *)
+            IFX (q, a, desugarCond rest)
+
       val qa = bracket ("[question answer]", pair <$> exp <*> exp)
+      val parsed_conds = many qa  (* Parse the conditions *)
+
+      fun handleParsedConds conds =
+        if null conds then
+          (* If there are no conditions at all, we raise an error per the specified behavior. *)
+          raise RuntimeError "Cond: all question results were false!"
+        else
+          (* Otherwise, we proceed to desugar the conditions. *)
+          desugarCond conds
+
     in 
-      desugarCond <$> many qa 
+      handleParsedConds <$> parsed_conds  (* Use the conditions parsed by 'parsed_conds' *)
     end
     )
   (* rows added to ML \uscheme's [[exptable]] in exercises S387c *)
