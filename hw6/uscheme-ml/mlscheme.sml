@@ -1,3 +1,8 @@
+(* COSC 3410 - Project 6 *)
+(* @author [Jacob Sussman, Samuel Schulz] *)
+(* Instructor [Brylow] *)
+(* TA-BOT:MAILTO [jacob.sussman@marquette.edu, samuel.schulz@marquette.edu] *)
+
 (* mlscheme.sml S379 *)
 
 
@@ -1490,18 +1495,27 @@ val _ = op bindings  : (name * exp) list parser
      , ("(let* (bindings) body)",   curry3 LETX LETSTAR <$> bindings   <*> exp)
      , ("(quote sexp)",             LITERAL             <$> sexp)
 
-   (* rows added to ML \uscheme's [[exptable]] in exercises ((prototype)) 322 *)
-     , ("(cond ([q a] ...))",
-        let fun desugarCond qas = raise LeftAsExercise "desugar cond"
-            val qa = bracket ("[question answer]", pair <$> exp <*> exp)
-     (* type declarations for consistency checking *)
-     val _ = op desugarCond : (exp * exp) list -> exp
-        in  desugarCond <$> many qa
-        end
-       )
-     (* rows added to ML \uscheme's [[exptable]] in exercises S387c *)
-     (* add syntactic sugar here, each row preceded by a comma *)
-     ]
+  (* rows added to ML \uscheme's [[exptable]] in exercises ((prototype)) 322 *)
+  , ("(cond ([q a] ...))",
+    let 
+      fun desugarCond qas =
+        case qas of
+          [] => 
+            (* No more conditions; this should not be an error but should return a default value. *)
+            LITERAL (BOOLV false)  (* This represents a 'false' literal in the interpreter. *)
+          | (q, a)::rest =>
+            (* For the current question-answer pair, create an if expression.
+              If the question evaluates to true, the answer is evaluated.
+              Otherwise, move to the next question-answer pair. *)
+            IFX (q, a, desugarCond rest)  (* Recursively process the rest of the conditions *)
+      val qa = bracket ("[question answer]", pair <$> exp <*> exp)
+    in 
+      desugarCond <$> many qa 
+    end
+    )
+  (* rows added to ML \uscheme's [[exptable]] in exercises S387c *)
+  (* add syntactic sugar here, each row preceded by a comma *)
+  ]
   end
 (* parsers and [[xdef]] streams for \uscheme S388b *)
 val exp = fullSchemeExpOf (atomicSchemeExpOf name) exptable
