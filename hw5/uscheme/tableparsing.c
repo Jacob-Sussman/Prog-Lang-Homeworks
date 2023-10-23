@@ -1,11 +1,3 @@
-/**
- * COSC 3410 - Project 5
- * Explain briefly the functionality of the program.
- * @author Jacob Sussman, Samuel Schulz
- * Instructor Dr. Brylow
- * TA-BOT:MAILTO jacob.sussman@marquette.edu, samuel.schulz@marquette.edu
- */
-
 #include "all.h"
 /* tableparsing.c S194a */
 /* private function prototypes for parsing S199d */
@@ -107,7 +99,8 @@ ParserResult sLocals(ParserState s) {
         context.name = strtoname("locals");
         context.par = p;
         halfshift(s);
-        s->components[s->nparsed++].names = parsenamelist(p->list->tl, &context);
+        s->components[s->nparsed++].names = parsenamelist(p->list->tl, &context)
+                                                                               ;
         return PARSED;
     } else {        
         s->components[s->nparsed++].names = NULL;
@@ -196,6 +189,7 @@ static ShiftFun checkexpshifts[] = { sExp, sExp,             stop };
 static ShiftFun checkassshifts[] = { sExp,                   stop };
 static ShiftFun checkerrshifts[] = { sExp,                   stop };
 static ShiftFun expshifts[]      = { use_exp_parser };
+static ShiftFun recordshifts[]   = { sName, sNamelist,       stop };
 
 void extendDefine(void) { defineshifts[3] = sExps; }
 
@@ -208,6 +202,7 @@ struct ParserRow xdeftable[] = {
     { "check-error",  ATEST(CHECK_ERROR),  checkerrshifts },
     /* rows added to [[xdeftable]] in exercises S210d */
     /* add new forms for extended definitions here */
+    { "record",       SUGAR(RECORD),       recordshifts},
     { NULL,           ADEF(EXP),           expshifts }  // must come last
 };
 /* tableparsing.c S204b */
@@ -301,6 +296,7 @@ void *name_error(Par bad, struct ParsingContext *c) {
                  c->par, bad);
     case SET:
         synerror(c->source, "in %p, expected (set x e), but %p is not a name",
+                                                                                
                  c->par, bad);
     case APPLY:
         synerror(c->source, "in %p, expected (function-name ...), "

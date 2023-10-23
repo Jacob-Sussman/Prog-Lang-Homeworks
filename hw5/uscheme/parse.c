@@ -1,10 +1,10 @@
-/**
- * COSC 3410 - Project 5  
- * Explain briefly the functionality of the program.
- * @author Jacob Sussman, Samuel Schulz
- * Instructor Dr. Brylow
- * TA-BOT:MAILTO jacob.sussman@marquette.edu, samuel.schulz@marquette.edu
- */
+/* 
+    COSC 3410 - Project 5
+    Implemented apply, record, read S-Expressions, and list
+    @author [Jacob Sussman, Samuel Schulz]
+    Instructor [Brylow]
+    TA-BOT:MAILTO [jacob.sussman@marquette.edu, samuel.schulz@marquette.edu]
+*/
 
 #include "all.h"
 /* parse.c S322b */
@@ -25,6 +25,8 @@ struct Usage usage_table[] = {
     { ALET(LET),     "(let ([var exp] ...) body)" },
     { ALET(LETSTAR), "(let* ([var exp] ...) body)" },
     { ALET(LETREC),  "(letrec ([var exp] ...) body)" },
+    { SUGAR(CAND), 	 "(&& exp … exp)" },
+    { SUGAR(RECORD), "(record name ([name ... name]))"},
     /* \uscheme\ [[usage_table]] entries added in exercises S324i */
     /* add expected usage for each new syntactic form */
     { -1, NULL }
@@ -38,6 +40,7 @@ static ShiftFun beginshifts[] = { sExps,                 stop };
 static ShiftFun letshifts[]   = { sBindings, sExp,       stop };
 static ShiftFun lambdashifts[]= { sNamelist, sExp,       stop };
 static ShiftFun applyshifts[] = { sExp, sExps,           stop };
+static ShiftFun recordshifts[]= { sName, sNamelist,      stop };
 /* arrays of shift functions added to \uscheme\ in exercises S324e */
 /* define arrays of shift functions as needed for [[exptable]] rows */
 /* lowering functions for {\uschemeplus} S340c */
@@ -48,13 +51,15 @@ struct ParserRow exptable[] = {
   { "if",     ANEXP(IFX),     ifshifts },
   { "begin",  ANEXP(BEGIN),   beginshifts },
   { "lambda", ANEXP(LAMBDAX), lambdashifts },
-  { "quote",  ANEXP(LITERAL), quoteshifts },
+  { "quote",  ANEXP(LITERAL), quoteshifts }, 
 
 /* rows of \uscheme's [[exptable]] that are sugared in {\uschemeplus} ((uscheme)) S323b */
     { "while",  ANEXP(WHILEX),  whileshifts },
     { "let",    ALET(LET),      letshifts },
     { "let*",   ALET(LETSTAR),  letshifts },
     { "letrec", ALET(LETREC),   letshifts },
+    { "&&",	    SUGAR(CAND),	beginshifts },
+    { "record", SUGAR(RECORD),  recordshifts },
   /* rows added to \uscheme's [[exptable]] in exercises S324f */
   /* add a row for each new syntactic form of Exp */
   { NULL,     ANEXP(APPLY),   applyshifts }  // must come last
@@ -78,6 +83,7 @@ Exp reduce_to_exp(int code, struct Component *comps) {
   case ANEXP(LAMBDAX): return mkLambdax(mkLambda(comps[0].names,comps[1].exp));
   case ANEXP(APPLY):   return mkApply(comps[0].exp, comps[1].exps);
   case ANEXP(LITERAL): return mkLiteral(comps[0].value);
+  case SUGAR(CAND): return desugarAnd(comps[0].exps);
   /* cases for \uscheme's [[reduce_to_exp]] added in exercises S324g */
   /* add a case for each new syntactic form of Exp */
   }
@@ -99,6 +105,7 @@ XDef reduce_to_xdef(int code, struct Component *out) {
     case ATEST(CHECK_ERROR): 
                        return mkTest(mkCheckError(out[0].exp));
     case ADEF(EXP):    return mkDef(mkExp(out[0].exp));
+    case SUGAR(RECORD): return mkDef(mkDefs(desugarRecord(out[0].name, out[1].names)));
     /* cases for \uscheme's [[reduce_to_xdef]] added in exercises S324h */
     /* add a case for each new syntactic form of definition */
     default:           assert(0);  // incorrectly configured parser
@@ -230,7 +237,8 @@ void check_exp_duplicates(Sourceloc source, Exp e) {
             for (Explist es = e->letx.es; es; es = es->tl)
                 if (es->hd->alt != LAMBDAX)
                     synerror(source,
-                             "in letrec, expression %e is not a lambda", es->hd);
+                             "in letrec, expression %e is not a lambda", es->hd)
+                                                                               ;
         return;
     default:
         return;
@@ -272,50 +280,93 @@ Exp desugarLetStar(Namelist xs, Explist es, Exp body) {
     }
 }
 
+Exp desugarAnd(Explist es) {
+    if(!es) return mkLiteral(truev);
+    if(es->tl == NULL) return es->hd;
+    return mkIfx(es->hd, desugarAnd(es->tl), mkLiteral(falsev));
+}
+
+static Exp consexp(Exp e1, Exp e2) {
+    return mkApply(mkLiteral(mkPrimitive(CONS, binary)), mkEL(e1, mkEL(e2, NULL)));
+}
+
+Def recordConstructor(Name recname, Namelist fieldnames) {
+    // Start with an empty list. We will represent 'nil' directly as a value.
+    Exp body = mkLiteral(mkNil()); 
+
+    // Add each field to the list, ensuring the right order.
+    for (int i = lengthNL(fieldnames) - 1; i >= 0; --i) { // Move backwards to keep the order.
+        body = consexp(mkVar(nthNL(fieldnames, i)), body);
+    }
+
+    // Add the record name as the first element.
+    body = consexp(mkLiteral(mkSym(recname)), body);
+
+    // Define the constructor function.
+    return mkDefine(
+        namecat(strtoname("make-"), recname),
+        mkLambda(fieldnames, body)
+    );
+}
+
+Def recordPredicate(Name recname, Namelist fieldnames) {
+    // The predicate checks if the first element of the list is the record name.
+    (void)fieldnames;
+    Name argName = strtoname("obj"); // Argument for the lambda function.
+
+    Exp check = mkApply(
+        mkVar(strtoname("equal?")),
+        mkEL(
+            mkApply(mkVar(strtoname("car")), mkEL(mkVar(argName), NULL)), // Get the first element of the list.
+            mkEL(mkLiteral(mkSym(recname)), NULL) // Check against the record name.
+        )
+    );
+
+    // Define the predicate function.
+    return mkDefine(
+        namecat(recname, strtoname("?")),
+        mkLambda(mkNL(argName, NULL), check)
+    );
+}
+
+Deflist recordAccessors(Name recname, int num, Namelist fieldnames) {
+    // This function will create a list of definitions, one for each accessor.
+    (void)num;
+    Deflist first = NULL;
+    Deflist *current = &first;
+
+    for (int i = 0; i < lengthNL(fieldnames); ++i) {
+        Name argName = strtoname("rec"); // Argument for the lambda function.
+
+        // Build a function body that retrieves the i-th element from the record (skipping the record name).
+        Exp body = mkVar(argName);
+        for (int j = 0; j < i + 1; ++j) {  // Only +1 to skip the record name.
+            body = mkApply(mkVar(strtoname("cdr")), mkEL(body, NULL));
+        }
+        body = mkApply(mkVar(strtoname("car")), mkEL(body, NULL));
+
+        // We need to manually add the hyphen between the record name and field name.
+        Name hyphen = strtoname("-");
+        Name prefixedFieldName = namecat(hyphen, nthNL(fieldnames, i)); // e.g., "-field"
+        Name accessorName = namecat(recname, prefixedFieldName); // e.g., "record-field"
+
+        // Create a definition for the accessor function.
+        *current = mkDL(
+            mkDefine(
+                accessorName, // Use the constructed function name with a hyphen.
+                mkLambda(mkNL(argName, NULL), body)
+            ),
+            NULL
+        );
+
+        current = &((*current)->tl);
+    }
+
+    return first;
+}
+
 Deflist desugarRecord(Name recname, Namelist fieldnames) {
-  Deflist defs = NULL;
-
-  Explist fieldlist = NULL;  // Initialize an empty explist
-
-  // Convert fieldnames to explist
-  Namelist currentField = fieldnames;
-  while (currentField != NULL) {
-    fieldlist = mkEL(mkVar(currentField->hd), fieldlist);
-    currentField = currentField->tl;
-  }
-
-  // Create a let expression to bind the fields
-  Exp letBody = mkLetx(LET, fieldnames, fieldlist, mkLiteral(truev));
-
-  defs = mkDL(mkDefine(mkConstructorName(recname), mkLambda(NULL, letBody)), defs);
-
-  Exp predicateArgs = mkVar(strtoname("x"));
-
-  Name predicateArgName = predicateArgs->var;
-
-  // Wrap predicates in explist
-  Exp predicateTest = mkApply(mkVar(strtoname("pair?")),
-                              mkEL(mkVar(predicateArgName), NULL)); // Change test
-
-  defs = mkDL(mkDefine(mkPredicateName(recname),
-                       mkLambda(mkNL(predicateArgName, NULL), predicateTest)),
-              defs);
-
-  Namelist field;
-  for (field = fieldnames; field != NULL; field = field->tl) {
-
-    Exp accessorArg = mkVar(strtoname("x"));
-
-    Name accessorArgName = accessorArg->var;
-
-    // Wrap accessor in explist
-    Exp accessorBody = mkApply(mkVar(mkAccessorName(recname, field->hd)),
-                              mkEL(mkVar(accessorArgName), NULL)); // Change test
-
-    defs = mkDL(mkDefine(mkAccessorName(recname, field->hd),
-                       mkLambda(mkNL(accessorArgName, NULL), accessorBody)),
-              defs);
-  }
-
-  return defs;
+    return mkDL(recordConstructor(recname, fieldnames),
+    mkDL(recordPredicate(recname, fieldnames),
+    recordAccessors(recname, 0, fieldnames)));
 }
