@@ -1488,7 +1488,23 @@ fun exptable exp =
             e
           | e::rest => 
             IFX (e, desugarAnd rest, LITERAL (BOOLV false))
-
+      (* Define desugarOr similar to desugarAnd but with the 'or' logic *)
+      fun desugarOr es =
+        let
+          (* The name of the variable as a string *)
+          val freshVarName = "freshvar%1"
+          (* The representation of the variable as an expression *)
+          val freshVarExp = VAR freshVarName
+        in
+          case es of
+            [] => 
+              LITERAL (BOOLV false)
+            | [e] => 
+              e
+            | e::rest =>
+              (* Here, we use freshVarName (string) in the binding, and freshVarExp (exp) in the expressions. *)
+              LETX (LET, [(freshVarName, e)], IFX (freshVarExp, freshVarExp, desugarOr rest))
+        end
       (* type declarations for consistency checking *)
       val _ = op exptable  : exp parser -> exp parser
       val _ = op exp       : exp parser
@@ -1507,6 +1523,7 @@ fun exptable exp =
       , ("(quote sexp)",             LITERAL             <$> sexp)
       (* We keep only this '&&' desugaring rule *)
       , ("(&& e1 e2 ...)", desugarAnd <$> many1 exp)  (* This line is for the '&&' desugaring *)
+      , ("(|| e1 e2 ...)", desugarOr <$> many1 exp)   (* This line is for the '||' desugaring *)
         
       , ("(cond ([q a] ...))",
           let 
