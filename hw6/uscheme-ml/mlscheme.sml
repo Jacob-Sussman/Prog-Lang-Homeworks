@@ -1473,61 +1473,66 @@ val _ = op fullSchemeExpOf : exp parser -> (exp parser -> exp parser) -> exp
                                                                           parser
 (* parsers and [[xdef]] streams for \uscheme S387b *)
 fun exptable exp =
-  let val bindings = bindingsOf "(x e)" name exp
+  let 
+      val bindings = bindingsOf "(x e)" name exp
       val formals  = formalsOf "(x1 x2 ...)" name "lambda"
       val dbs      = distinctBsIn bindings
-      val letrecbs =
-        distinctBsIn
-            (bindingsOf "[f (lambda (...) ...)]" name (asLambda "letrec" exp))
-            "letrec"
-(* type declarations for consistency checking *)
-val _ = op exptable  : exp parser -> exp parser
-val _ = op exp       : exp parser
-val _ = op bindings  : (name * exp) list parser
-  in usageParsers
-     [ ("(if e1 e2 e3)",            curry3 IFX    <$> exp <*> exp <*> exp)
-     , ("(while e1 e2)",            curry  WHILEX <$> exp  <*> exp)
-     , ("(set x e)",                curry  SET    <$> name <*> exp)
-     , ("(begin e1 ...)",                  BEGIN  <$> many exp)
-     , ("(lambda (names) body)",    curry  LAMBDA <$> formals <*> exp)
-     , ("(let (bindings) body)",    curry3 LETX LET     <$> dbs  "let" <*> exp)
-     , ("(letrec (bindings) body)", curry3 LETX LETREC  <$> letrecbs   <*> exp)
-     , ("(let* (bindings) body)",   curry3 LETX LETSTAR <$> bindings   <*> exp)
-     , ("(quote sexp)",             LITERAL             <$> sexp)
+      val letrecbs = distinctBsIn (bindingsOf "[f (lambda (...) ...)]" name (asLambda "letrec" exp)) "letrec"
 
-  (* rows added to ML \uscheme's [[exptable]] in exercises ((prototype)) 322 *)
-  , ("(cond ([q a] ...))",
-    let 
-      fun desugarCond qas =
-        case qas of
+      (* Define desugarAnd here before using it *)
+      fun desugarAnd es =
+        case es of
           [] => 
-            (* No more conditions; in this context, it means all previous conditions were false,
-              so we return a 'false' literal. *)
-            LITERAL (BOOLV false) 
-          | (q, a)::rest =>
-            (* For each question-answer pair, create an if expression.
-              If the question evaluates to true, the answer is evaluated.
-              Otherwise, move to the next question-answer pair. *)
-            IFX (q, a, desugarCond rest)
+            LITERAL (BOOLV true)
+          | [e] => 
+            e
+          | e::rest => 
+            IFX (e, desugarAnd rest, LITERAL (BOOLV false))
 
-      val qa = bracket ("[question answer]", pair <$> exp <*> exp)
-      val parsed_conds = many qa  (* Parse the conditions *)
+      (* type declarations for consistency checking *)
+      val _ = op exptable  : exp parser -> exp parser
+      val _ = op exp       : exp parser
+      val _ = op bindings  : (name * exp) list parser
 
-      fun handleParsedConds conds =
-        if null conds then
-          (* If there are no conditions at all, we raise an error per the specified behavior. *)
-          raise RuntimeError "Cond: all question results were false!"
-        else
-          (* Otherwise, we proceed to desugar the conditions. *)
-          desugarCond conds
+  in 
+      usageParsers
+      [ ("(if e1 e2 e3)",            curry3 IFX    <$> exp <*> exp <*> exp)
+      , ("(while e1 e2)",            curry  WHILEX <$> exp  <*> exp)
+      , ("(set x e)",                curry  SET    <$> name <*> exp)
+      , ("(begin e1 ...)",                  BEGIN  <$> many exp)
+      , ("(lambda (names) body)",    curry  LAMBDA <$> formals <*> exp)
+      , ("(let (bindings) body)",    curry3 LETX LET     <$> dbs  "let" <*> exp)
+      , ("(letrec (bindings) body)", curry3 LETX LETREC  <$> letrecbs   <*> exp)
+      , ("(let* (bindings) body)",   curry3 LETX LETSTAR <$> bindings   <*> exp)
+      , ("(quote sexp)",             LITERAL             <$> sexp)
+      (* We keep only this '&&' desugaring rule *)
+      , ("(&& e1 e2 ...)", desugarAnd <$> many1 exp)  (* This line is for the '&&' desugaring *)
+        
+      , ("(cond ([q a] ...))",
+          let 
+            fun desugarCond qas =
+              case qas of
+                [] => 
+                  LITERAL (BOOLV false)
+                | (q, a)::rest =>
+                  IFX (q, a, desugarCond rest)
 
-    in 
-      handleParsedConds <$> parsed_conds  (* Use the conditions parsed by 'parsed_conds' *)
-    end
-    )
-  (* rows added to ML \uscheme's [[exptable]] in exercises S387c *)
-  (* add syntactic sugar here, each row preceded by a comma *)
-  ]
+            val qa = bracket ("[question answer]", pair <$> exp <*> exp)
+            val parsed_conds = many qa
+
+            fun handleParsedConds conds =
+              if null conds then
+                (TextIO.print "Run-time error: Cond: all question results were false!\n"; LITERAL (BOOLV false))
+              else
+                desugarCond conds
+
+          in 
+            handleParsedConds <$> parsed_conds
+          end
+          )
+        
+        (* Other parsing rules can follow here, each row preceded by a comma *)
+      ]
   end
 (* parsers and [[xdef]] streams for \uscheme S388b *)
 val exp = fullSchemeExpOf (atomicSchemeExpOf name) exptable
