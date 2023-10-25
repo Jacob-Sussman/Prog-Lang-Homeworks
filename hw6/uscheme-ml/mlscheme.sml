@@ -1460,22 +1460,24 @@ fun atomicSchemeExpOf name =  VAR                   <$> name
 
 (* Syntactic sugar for short-circuit && *)
 
-(* 
+
 fun desugarAnd [e] = e
   | desugarAnd (e1::e2::es) = 
     IFX(e1, desugarAnd (e2::es), LITERAL (BOOLV false))
-*)
+  | desugarAnd _ = raise InternalError "desugarAnd: invalid pattern"
+
 
 (* Syntactic sugar for short-circuit || *)
 
-(*
-val freshvar%1 = "freshvar%1"
+
+val freshvar1 = "freshvar%1"
 
 fun desugarOr [e] = e
   | desugarOr (e1::e2::es) =
-    LETX(LET, [(freshvar%1, e1)],
-         IFX(VAR freshvar%1, VAR freshvar%1, desugarOr (e2::es)))
-*)
+    LETX(LET, [("freshvar%1", e1)],
+         IFX(VAR "freshvar%1", VAR "freshvar%1", desugarOr (e2::es)))
+  | desugarOr _ = raise InternalError "desugarOr: invalid pattern"
+
 
 (* parsers and parser builders for \scheme-like syntax S388a *)
 fun fullSchemeExpOf atomic bracketedOf =
