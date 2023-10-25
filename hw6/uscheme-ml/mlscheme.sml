@@ -1,7 +1,7 @@
 (* COSC 3410 - Project 6 *)
-(* @author [Jacob Sussman, Samuel Schulz] *)
-(* Instructor [Brylow] *)
-(* TA-BOT:MAILTO [jacob.sussman@marquette.edu, samuel.schulz@marquette.edu] *)
+(* @author Jacob Sussman, Samuel Schulz *)
+(* Instructor Dr. Brylow *)
+(* TA-BOT:MAILTO jacob.sussman@marquette.edu, samuel.schulz@marquette.edu *)
 
 (* mlscheme.sml S379 *)
 
@@ -1457,6 +1457,26 @@ val _ = op sexp : value parser
 fun atomicSchemeExpOf name =  VAR                   <$> name
                           <|> LITERAL <$> NUM       <$> int
                           <|> LITERAL <$> embedBool <$> booltok
+
+(* Syntactic sugar for short-circuit && *)
+
+(* 
+fun desugarAnd [e] = e
+  | desugarAnd (e1::e2::es) = 
+    IFX(e1, desugarAnd (e2::es), LITERAL (BOOLV false))
+*)
+
+(* Syntactic sugar for short-circuit || *)
+
+(*
+val freshvar%1 = "freshvar%1"
+
+fun desugarOr [e] = e
+  | desugarOr (e1::e2::es) =
+    LETX(LET, [(freshvar%1, e1)],
+         IFX(VAR freshvar%1, VAR freshvar%1, desugarOr (e2::es)))
+*)
+
 (* parsers and parser builders for \scheme-like syntax S388a *)
 fun fullSchemeExpOf atomic bracketedOf =
   let val exp = fn tokens => fullSchemeExpOf atomic bracketedOf tokens
