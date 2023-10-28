@@ -1483,11 +1483,11 @@ fun exptable exp =
       fun desugarAnd es =
         case es of
           [] => 
-            LITERAL (BOOLV true)
+            LITERAL (BOOLV true)  (* No arguments, so it's 'vacuously true' *)
           | [e] => 
-            e
+            e  (* Single argument, just return it *)
           | e::rest => 
-            IFX (e, desugarAnd rest, LITERAL (BOOLV false))
+            IFX (e, desugarAnd rest, LITERAL (BOOLV false))  (* General case for multiple arguments *)
       (* Define desugarOr similar to desugarAnd but with the 'or' logic *)
       fun desugarOr es =
         let
@@ -1522,8 +1522,8 @@ fun exptable exp =
       , ("(let* (bindings) body)",   curry3 LETX LETSTAR <$> bindings   <*> exp)
       , ("(quote sexp)",             LITERAL             <$> sexp)
       (* We keep only this '&&' desugaring rule *)
-      , ("(&& e1 e2 ...)", desugarAnd <$> many1 exp)  (* This line is for the '&&' desugaring *)
-      , ("(|| e1 e2 ...)", desugarOr <$> many1 exp)   (* This line is for the '||' desugaring *)
+      , ("(&& e1 e2 ...)", desugarAnd <$> many exp)   (* This line is for the '&&' desugaring *)
+      , ("(|| e1 e2 ...)", desugarOr <$> many exp)    (* This line is for the '||' desugaring *)
         
       , ("(cond ([q a] ...))",
           let 
