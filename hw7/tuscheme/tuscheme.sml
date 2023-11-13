@@ -1,3 +1,8 @@
+(* COSC 3410 - Project 7 *)
+(* @author Jacob Sussman, Samuel Schulz *)
+(* Instructor Dr. Brylow *)
+(* TA-BOT:MAILTO jacob.sussman@marquette.edu, samuel.schulz@marquette.edu *)
+
 (* <tuscheme.sml>=                              *)
 
 
@@ -4668,6 +4673,140 @@ val _ = op eqTypes : tyex list * tyex list -> bool
 (* <type checking for {\tuscheme} ((prototype))>= *)
 fun typeof _ = raise LeftAsExercise "typeof"
 fun typdef _ = raise LeftAsExercise "typdef"
+
+(* <type checking for {\tuscheme} ((prototype))>= *)
+fun typeof (LITERAL v, Delta, Gamma) = 
+  (case v of
+    NUM _ => inttype
+  | BOOLV _ => booltype
+  | SYM _ => symtype
+  | NIL => unittype
+  | PAIR _ => raise BugInTypeChecking "typeof on pair"
+  | _ => raise BugInTypeChecking "typeof on non-value")
+
+  | typeof (VAR x, Delta, Gamma) = 
+      (find (x, Gamma)
+       handle NotFound _ => 
+         raise TypeError ("Unbound variable " ^ x))
+
+  | typeof (SET (x, e), Delta, Gamma) =
+      let val tau = typeof (e, Delta, Gamma)
+      in if eqType(tau, find(x, Gamma)) 
+         then tau 
+         else raise TypeError "Mismatched types in SET"
+      end
+
+  | typeof (IFX (e1, e2, e3), Delta, Gamma) =
+      let val tau1 = typeof (e1, Delta, Gamma)
+          val tau2 = typeof (e2, Delta, Gamma) 
+          val tau3 = typeof (e3, Delta, Gamma)
+      in
+        if eqType(tau1, booltype) andalso eqType(tau2, tau3)
+        then tau2
+        else raise TypeError "IF branches have different types"
+      end
+
+  | typeof (WHILEX (e1, e2), Delta, Gamma) =
+      let val tau1 = typeof (e1, Delta, Gamma)
+          val tau2 = typeof (e2, Delta, Gamma)
+      in
+        if eqType(tau1, booltype) andalso eqType(tau2, unittype)
+        then unittype
+        else raise TypeError "WHILE condition and body have incompatible types"
+      end
+
+  | typeof (BEGIN es, Delta, Gamma) = 
+      let fun loop [] = unittype
+            | loop (e::es) = 
+                let val tau = typeof(e, Delta, Gamma)
+                in loop es
+                end
+      in loop es
+      end
+
+| typeof (APPLY (e, es), Delta, Gamma) =
+    (case typeof(e, Delta, Gamma) of
+      FUNTY (args, result) =>
+        if length es = length args andalso
+           ListPair.allEq (fn (e, t) => eqType(typeof(e, Delta, Gamma), t)) (es, args)
+        then result
+        else raise TypeError "APPLY to wrong number of arguments or wrong types"
+    | _ => raise TypeError "APPLY of non-function")
+
+| typeof (LETX (_, bs, e), Delta, Gamma) =
+    let
+        val names = map #1 bs
+        val taus = map (fn (_, exp) => typeof(exp, Delta, Gamma)) bs
+        val Gamma' = Gamma <+> mkEnv(names, taus)
+    in
+        typeof (e, Delta, Gamma')
+    end
+
+| typeof (LETRECX (bs, e), Delta, Gamma) =
+    let
+        val names = map (fst o fst) bs
+        val taus = map (fn ((x, _), exp) => typeof(exp, Delta, Gamma)) bs
+        val Gamma' = Gamma <+> mkEnv(names, taus)
+    in
+        typeof (e, Delta, Gamma')
+    end
+
+  | typeof (LAMBDA (args, e), Delta, Gamma) =
+      let
+        val argTaus = map snd args
+        val Gamma' = Gamma <+> mkEnv(map fst args, argTaus)
+      in
+        FUNTY(argTaus, typeof(e, Delta, Gamma'))
+      end
+
+  | typeof (TYLAMBDA (_, _), _, _) = 
+      raise BugInTypeChecking "typeof on type-lambda"
+
+  | typeof (TYAPPLY (_, _), _, _) =
+      raise BugInTypeChecking "typeof on type application"
+
+fun bindType (x, tau, Gamma) =
+  if isbound(x, Gamma)
+  then raise TypeError ("redefinition of " ^ x)
+  else Gamma <+> [(x, tau)]
+
+fun typdef (VAL (x, e), Delta, Gamma) = 
+  let 
+    val tau = typeof(e, Delta, Gamma)
+  in
+    (bindType(x, tau, Gamma), 
+     "value " ^ x ^ " : " ^ typeString tau)
+  end
+
+| typdef (VALREC (x, tau, e), Delta, Gamma) =
+  let
+    val _ = asType(tau, Delta)
+    val Gamma' = bindType(x, tau, Gamma)
+    val _ = typeof(e, Delta, Gamma')
+  in 
+    (Gamma', "val-rec " ^ x ^ " : " ^ typeString tau)
+  end
+  
+| typdef (EXP e, Delta, Gamma) =
+  let
+    val tau = typeof(e, Delta, Gamma)
+  in
+    (bindType("it", tau, Gamma),
+     "expression : " ^ typeString tau) 
+  end
+  
+| typdef (DEFINE (f, tau, lambda), Delta, Gamma) =
+  let
+    val _ = asType(tau, Delta)
+    val (args, body) = lambda
+    val argTaus = map snd args
+    val funTy = FUNTY(argTaus, tau)
+    val Gamma' = bindType(f, funTy, Gamma) 
+    val _ = typeof(LAMBDA(lambda), Delta, Gamma')
+  in
+    (Gamma', "define " ^ f ^ " : " ^ typeString funTy)
+  end
+
 (* <boxed values 1>=                            *)
 val _ = op eqKind  : kind      * kind      -> bool
 val _ = op eqKinds : kind list * kind list -> bool
@@ -6727,4 +6866,3 @@ val _ = op strip_options : action -> string list -> action * string list
 (* described in \crefpage(lazyparse.fig.lexers-parsers. *)
 (*                                              *)
 (* The code is divided among these chunks:      *)
-
