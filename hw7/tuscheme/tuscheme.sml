@@ -4671,8 +4671,8 @@ val _ = op eqTypes : tyex list * tyex list -> bool
 (*****************************************************************)
 
 (* <type checking for {\tuscheme} ((prototype))>= *)
-fun typeof _ = raise LeftAsExercise "typeof"
-fun typdef _ = raise LeftAsExercise "typdef"
+(* fun typeof _ = raise LeftAsExercise "typeof" *)
+(* fun typdef _ = raise LeftAsExercise "typdef" *)
 
 (* <type checking for {\tuscheme} ((prototype))>= *)
 fun typeof (LITERAL v, Delta, Gamma) = 
